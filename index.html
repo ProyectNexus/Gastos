@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Gastos</title>
+
+<!-- Estos tags solo funcionan en la página de arriba. Por eso existe este archivo. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Gastos">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#2C7A54">
+
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+
+<style>
+  html, body {
+    margin: 0; padding: 0; height: 100%; overflow: hidden;
+    background: #F3F6F0; overscroll-behavior: none;
+  }
+  /* El marco arranca más arriba del borde para dejar afuera
+     la barra de Google que trae la página de Apps Script. */
+  #marco {
+    position: fixed;
+    left: 0; right: 0;
+    top: calc(0px - var(--recorte));
+    height: calc(100% + var(--recorte));
+    width: 100%;
+    border: 0;
+    display: block;
+  }
+  :root { --recorte: 46px; }
+
+  /* Con la barra de estado translúcida hay que bajar el contenido. */
+  @supports (padding-top: env(safe-area-inset-top)) {
+    #tapa {
+      position: fixed; top: 0; left: 0; right: 0;
+      height: env(safe-area-inset-top);
+      background: #F3F6F0; z-index: 2;
+    }
+  }
+
+  #cargando {
+    position: fixed; inset: 0; display: grid; place-items: center;
+    background: #F3F6F0; z-index: 3; transition: opacity .4s ease;
+  }
+  #cargando.listo { opacity: 0; pointer-events: none; }
+  .giro {
+    width: 30px; height: 30px; border: 3px solid #E2E7DE;
+    border-top-color: #2C7A54; border-radius: 50%;
+    animation: girar .7s linear infinite;
+  }
+  @keyframes girar { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div id="cargando"><div class="giro"></div></div>
+<div id="tapa"></div>
+
+<!-- PEGÁ ACÁ LA URL DE TU APLICACIÓN WEB (la que termina en /exec) -->
+<iframe id="marco"
+        src="https://script.google.com/macros/s/PEGA_TU_URL_ACA/exec"
+        allow="clipboard-write; vibrate"
+        referrerpolicy="origin"></iframe>
+
+<script>
+  // El alto de la barra de Google cambia si el texto se parte en dos líneas.
+  // En pantallas angostas conviene recortar un poco más.
+  if (window.innerWidth < 380) {
+    document.documentElement.style.setProperty('--recorte', '62px');
+  }
+
+  document.getElementById('marco').addEventListener('load', function () {
+    document.getElementById('cargando').classList.add('listo');
+  });
+
+  // Por si el iframe tarda o falla, no dejamos la pantalla tapada.
+  setTimeout(function () {
+    document.getElementById('cargando').classList.add('listo');
+  }, 6000);
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(function () {});
+  }
+</script>
+</body>
+</html>
