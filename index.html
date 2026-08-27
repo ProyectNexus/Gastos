@@ -100,31 +100,63 @@
   })();
 
   /**
-   * La app avisa qué tema tiene puesto y el envoltorio se pinta igual.
-   * Sin esto, detrás de la barra de estado se ve el fondo claro de esta
-   * página y queda un corte con la app en tema oscuro.
+   * El envoltorio es el único con dirección fija, así que hace de memoria
+   * de la app: guarda el token de sesión y el color del tema.
+   *
+   * La app vive dos marcos más adentro (esta página -> Google -> la app),
+   * por eso los mensajes llegan de googleusercontent.com y se responden
+   * al que los mandó, no al marco directo.
    */
   (function () {
     var CLAVE_COLOR = 'gastos.color';
 
-    function pintar(color) {
-      if (!/^#[0-9A-Fa-f]{6}$/.test(String(color))) return;
-      document.body.style.background = color;
-      document.documentElement.style.background = color;
-      var meta = document.querySelector('meta[name="theme-color"]');
-      if (meta) meta.setAttribute('content', color);
-      document.getElementById('cargando').style.background = color;
+    function leer(clave) {
+      try { return localStorage.getItem(clave); } catch (e) { return null; }
+    }
+    function escribir(clave, valor) {
+      try { localStorage.setItem(clave, valor); } catch (e) {}
     }
 
-    // Antes de que cargue la app, usamos el último color conocido: sin parpadeo.
-    try { pintar(localStorage.getItem(CLAVE_COLOR)); } catch (e) {}
+    function pintar(color) {
+      if (!/^#[0-9A-Fa-f]{6}$/.test(String(color))) return;
+      document.documentElement.style.background = color;
+      document.body.style.background = color;
+      var meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute('content', color);
+      var c = document.getElementById('cargando');
+      if (c) c.style.background = color;
+    }
+
+    pintar(leer(CLAVE_COLOR));
+
+    function esDeLaApp(origen) {
+      origen = String(origen);
+      return origen.indexOf('googleusercontent.com') !== -1 ||
+             origen.indexOf('script.google.com') !== -1;
+    }
 
     window.addEventListener('message', function (e) {
-      if (!e.data || e.data.app !== 'gastos' || !e.data.color) return;
-      if (String(e.origin).indexOf('googleusercontent.com') === -1 &&
-          String(e.origin).indexOf('script.google.com') === -1) return;
-      pintar(e.data.color);
-      try { localStorage.setItem(CLAVE_COLOR, e.data.color); } catch (er) {}
+      var d = e.data;
+      if (!d || d.app !== 'gastos' || !esDeLaApp(e.origin)) return;
+
+      if (d.tipo === 'pedirToken') {
+        // Se responde a quien preguntó: es el marco de adentro, no el de al lado.
+        try {
+          e.source.postMessage({
+            app: 'gastos', tipo: 'token', token: leer('gastos.token') || ''
+          }, '*');
+        } catch (err) {}
+
+      } else if (d.tipo === 'guardar' && d.clave) {
+        escribir(d.clave, d.valor);
+
+      } else if (d.tipo === 'borrar' && d.clave) {
+        try { localStorage.removeItem(d.clave); } catch (err) {}
+
+      } else if (d.tipo === 'color') {
+        pintar(d.color);
+        escribir(CLAVE_COLOR, d.color);
+      }
     });
   })();
 
