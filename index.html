@@ -80,6 +80,35 @@
     document.documentElement.style.setProperty('--recorte', valor + 'px');
   })();
 
+  /**
+   * La app avisa qué tema tiene puesto y el envoltorio se pinta igual.
+   * Sin esto, detrás de la barra de estado se ve el fondo claro de esta
+   * página y queda un corte con la app en tema oscuro.
+   */
+  (function () {
+    var CLAVE_COLOR = 'gastos.color';
+
+    function pintar(color) {
+      if (!/^#[0-9A-Fa-f]{6}$/.test(String(color))) return;
+      document.body.style.background = color;
+      document.documentElement.style.background = color;
+      var meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute('content', color);
+      document.getElementById('cargando').style.background = color;
+    }
+
+    // Antes de que cargue la app, usamos el último color conocido: sin parpadeo.
+    try { pintar(localStorage.getItem(CLAVE_COLOR)); } catch (e) {}
+
+    window.addEventListener('message', function (e) {
+      if (!e.data || e.data.app !== 'gastos' || !e.data.color) return;
+      if (String(e.origin).indexOf('googleusercontent.com') === -1 &&
+          String(e.origin).indexOf('script.google.com') === -1) return;
+      pintar(e.data.color);
+      try { localStorage.setItem(CLAVE_COLOR, e.data.color); } catch (er) {}
+    });
+  })();
+
   document.getElementById('marco').addEventListener('load', function () {
     document.getElementById('cargando').classList.add('listo');
   });
