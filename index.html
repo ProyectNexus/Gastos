@@ -9,10 +9,29 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Gastos">
-<!-- "default" deja la barra de estado opaca y el contenido empieza abajo.
-     Con "black-translucent" el reloj se superpone al encabezado de la app. -->
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="theme-color" content="#F3F6F0">
+
+<script>
+/*
+ * iOS lee el estilo de la barra de estado UNA sola vez, al arrancar la app,
+ * y ya no lo cambia. Por eso hay que escribir el meta correcto acá arriba,
+ * antes de que termine de leer la página, según el tema que quedó guardado.
+ *   claro  -> "default": barra clara, reloj negro
+ *   oscuro -> "black":   barra negra,  reloj blanco
+ */
+(function () {
+  var color = '#0F1319';
+  try { color = localStorage.getItem('gastos.color') || color; } catch (e) {}
+
+  var r = parseInt(color.substr(1, 2), 16),
+      g = parseInt(color.substr(3, 2), 16),
+      b = parseInt(color.substr(5, 2), 16);
+  var claro = (0.299 * r + 0.587 * g + 0.114 * b) > 150;
+
+  document.write('<meta name="apple-mobile-web-app-status-bar-style" content="' +
+                 (claro ? 'default' : 'black') + '">');
+  document.write('<meta name="theme-color" content="' + color + '">');
+})();
+</script>
 
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -23,7 +42,7 @@
 
   html, body {
     margin: 0; padding: 0; height: 100%; overflow: hidden;
-    background: #F3F6F0; overscroll-behavior: none;
+    background: #0F1319; overscroll-behavior: none;
   }
 
   /* Si el cartel de Google llegara a aparecer, --recorte corre el marco
@@ -40,7 +59,7 @@
 
   #cargando {
     position: fixed; inset: 0; display: grid; place-items: center;
-    background: #F3F6F0; z-index: 3; transition: opacity .4s ease;
+    background: #0F1319; z-index: 3; transition: opacity .4s ease;
   }
   #cargando.listo { opacity: 0; pointer-events: none; }
   .giro {
